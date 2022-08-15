@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
 import javax.sql.DataSource;
 
@@ -51,6 +53,12 @@ public class SecurityConfig2 extends WebSecurityConfigurerAdapter {
                 .antMatchers("/test/index").hasAnyRole("sale,admin") //表示只要具备sale或admin两个角色的其中之一，就有权限访问/test/index这个接口
 
                 .anyRequest().authenticated() //除了上面一行的三个链接，其他任何请求都必须经过身份验证
+
+                //以下三行代码：配置自动登录功能（和javaweb中的cookie功能类似）
+                .and().rememberMe().tokenRepository(persistentTokenRepository())
+                .tokenValiditySeconds(120) //设置有效时间是120秒
+                .userDetailsService(userDetailsService)
+
                 .and().csrf().disable();//关闭 csrf防护
     }
 
@@ -58,7 +66,14 @@ public class SecurityConfig2 extends WebSecurityConfigurerAdapter {
     //注入数据源
     @Autowired
     private DataSource dataSource;
-
+    //配置对象
+    @Bean
+    public PersistentTokenRepository persistentTokenRepository() {
+        JdbcTokenRepositoryImpl jdbcTokenRepository = new JdbcTokenRepositoryImpl();
+        jdbcTokenRepository.setDataSource(dataSource);
+        //jdbcTokenRepository.setCreateTableOnStartup(true); //启动时创建表，因为表已经手动创建了，这行代码可以不要
+        return jdbcTokenRepository;
+    }
 
 
 
